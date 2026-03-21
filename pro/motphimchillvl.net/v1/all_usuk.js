@@ -1,9 +1,11 @@
-// Story 1-15 | Motchill | Phim Trung Quốc Mới
-// Target: https://motphimchillvl.net/quoc-gia/trung-quoc
+// Story 5-7a | Motchill | All US-UK (CTA — full list)
+// Target: https://motphimchillvl.net/quoc-gia/au-my?page=N
 
-async function getNewChinese() {
+async function getAllUsUk() {
     const MC_BASE = 'https://motphimchillvl.net';
     const MC_UA   = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
+    const MAX_PAGES = 5;
+    const MAX_ITEMS = 80;
 
     async function fetchHtml(url) {
         const res = await fetch(url, { headers: { 'User-Agent': MC_UA } });
@@ -16,15 +18,10 @@ async function getNewChinese() {
         return m ? m[1] : '';
     }
 
-    try {
-        console.log('[KENG][1-15][Motchill] getNewChinese()');
-
-        const html = await fetchHtml(MC_BASE + '/quoc-gia/trung-quoc');
-        console.log('[KENG][1-15][Motchill] HTML length: ' + html.length);
-
+    function parsePage(html) {
         const liParts = html.split('<li class="item');
         const movies = [];
-        for (let i = 1; i < liParts.length && movies.length < 20; i++) {
+        for (let i = 1; i < liParts.length; i++) {
             const block = liParts[i];
             const endIdx = block.indexOf('</li>');
             const liBody = endIdx >= 0 ? block.substring(0, endIdx) : block.substring(0, 2000);
@@ -37,34 +34,54 @@ async function getNewChinese() {
             const nameTitleM = liBody.match(/class="name"[\s\S]*?title="([^"]+)"/);
             const rawTitle = nameTitleM
                 ? nameTitleM[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&#039;/g, "'")
-                : hrefM[1];
+                : '';
+            if (!rawTitle) continue;
 
             const yearM = rawTitle.match(/\b(20\d{2})\s*$/);
             const year  = yearM ? yearM[1] : '';
             const title = yearM ? rawTitle.slice(0, -year.length).trim() : rawTitle;
 
             const label      = labelM ? labelM[1].trim() : '';
+            if (label.toLowerCase().includes('trailer')) continue;
             const plusIdx    = label.indexOf(' + ');
             const badge_text = plusIdx >= 0 ? label.slice(0, plusIdx).trim() : label;
             const badge_sub  = plusIdx >= 0 ? label.slice(plusIdx + 3).trim() : '';
 
+            // Detect media_type for US-UK (mix of movies and series)
+            let media_type = 'movie';
+            if (/tập\s*\d+/i.test(badge_text) || /^\d+\/\d+$/.test(badge_text) || /\d+\s*tập/i.test(badge_text)) {
+                media_type = 'series';
+            } else if (/full/i.test(badge_text) && !/full\s*hd/i.test(badge_text)) {
+                media_type = 'series';
+            }
+
             movies.push({
                 rank: 0, title, title_original: '',
                 poster_url: imgM ? MC_BASE + imgM[1] : '',
-                url: hrefM[1], media_type: 'series', badge_text, badge_sub,
+                url: hrefM[1], media_type, badge_text, badge_sub,
                 year, rating: '', synopsis: '', age_rating: '',
                 episode_current: badge_text, genres: [], slug: hrefM[2]
             });
         }
+        return movies;
+    }
 
-        if (movies.length === 0) throw new Error('No movies parsed from /quoc-gia/trung-quoc');
+    try {
+        console.log('[KENG][5-7a][Motchill] getAllUsUk()');
+        const allMovies = [];
 
-        const filtered = movies.filter(m => !m.badge_text.toLowerCase().includes('trailer'));
-        if (filtered.length === 0) throw new Error('All items filtered as trailers');
-        filtered.forEach((m, i) => { movies[i] = m; });
-        movies.length = filtered.length;
+        for (let page = 1; page <= MAX_PAGES && allMovies.length < MAX_ITEMS; page++) {
+            const url = MC_BASE + '/quoc-gia/au-my?page=' + page;
+            const html = await fetchHtml(url);
+            const pageMovies = parsePage(html);
+            if (pageMovies.length === 0) break;
+            allMovies.push(...pageMovies);
+            console.log('[KENG][5-7a][Motchill] page ' + page + ': ' + pageMovies.length + ' items');
+        }
 
-        const misses = movies.filter(m => !m.poster_url);
+        if (allMovies.length === 0) throw new Error('No US-UK movies found');
+
+        const misses = allMovies.filter(m => !m.poster_url);
         if (misses.length > 0) {
             const results = await Promise.allSettled(misses.map(m => fetchHtml(m.url)));
             results.forEach((r, i) => {
@@ -72,12 +89,12 @@ async function getNewChinese() {
             });
         }
 
-        const output = movies.map(({ slug, ...rest }) => rest);
-        console.log('[KENG][1-15][Motchill] SUCCESS: ' + output.length + ' items, first: ' + output[0].title);
+        const output = allMovies.slice(0, MAX_ITEMS).map(({ slug, ...rest }) => rest);
+        console.log('[KENG][5-7a][Motchill] getAllUsUk() SUCCESS: ' + output.length + ' items');
         return JSON.stringify(output);
 
     } catch (e) {
-        console.log('[KENG][1-15][Motchill] ERROR: ' + e.message);
+        console.log('[KENG][5-7a][Motchill] getAllUsUk() ERROR: ' + e.message);
         return JSON.stringify({ error: e.message });
     }
 }
