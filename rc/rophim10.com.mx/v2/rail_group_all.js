@@ -80,10 +80,14 @@ async function railGroupAll() {
             
             // CTA config: rails that have show_cta enabled
             const ctaConfig = {
-              'korean':  { js_method: 'getAllKorean' },
-              'chinese': { js_method: 'getAllChinese' },
-              'usuk':    { js_method: 'getAllUsuk' },
-              'cinema':  { js_method: 'getAllCinema' },
+              'korean':           { js_method: 'getAllKorean' },
+              'chinese':          { js_method: 'getAllChinese' },
+              'usuk':             { js_method: 'getAllUsuk' },
+              'cinema':           { js_method: 'getAllCinema' },
+              'cinema_featured':  { js_method: 'getAllCinemaFeatured' },
+              'phim_hot':         { js_method: 'getAllPhimHot' },
+              'anime':            { js_method: 'getAllAnime' },
+              'hongkong':         { js_method: 'getAllHongKong' },
             };
 
             for (const apiList of apiData.result.collections) {
@@ -246,4 +250,84 @@ async function getAllCinema(page) {
     'https://rophim10.com.mx/baseapi/api/v1/movies/by-category/chieu-rap?page=' + p,
     'getAllCinema p=' + p
   );
+}
+
+/**
+ * Fetch CTA movies from homepageLists by collection slug
+ * Used for collections that don't have dedicated API endpoints
+ */
+async function _fetchCtaFromList(slug, page, label) {
+  const SITE_BASE = 'https://rophim10.com.mx';
+  const BASE_API = 'https://rophim10.com.mx/baseapi/api/v1';
+  const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
+
+  function transformCtaMovie(apiMovie) {
+    return {
+      rank: 0,
+      title: apiMovie.name || '',
+      title_original: apiMovie.origin_name || '',
+      poster_url: apiMovie.thumbnail || apiMovie.poster || '',
+      thumbnail_url: apiMovie.thumbnail || '',
+      url: apiMovie.slug ? SITE_BASE + '/phim/' + apiMovie.slug : '',
+      media_type: apiMovie.type === 'series' ? 'series' : 'movie',
+      badge_text: '',
+      badge_sub: '',
+      year: String(apiMovie.publish_year || ''),
+      rating: String(apiMovie.imdb_rating || ''),
+      synopsis: '',
+      age_rating: '',
+      episode_current: apiMovie.episode_current || '',
+      genres: []
+    };
+  }
+
+  try {
+    // Fetch all lists, then filter by slug client-side
+    // Note: API doesn't support filtering by slug or pagination per list
+    const url = BASE_API + '/lists/homepageLists?page=1&limit=15';
+    const r = await fetch(url, { headers: { 'User-Agent': UA } });
+    if (!r.ok) {
+      console.warn('[KENG][RoPhim10] ' + label + ' HTTP ' + r.status);
+      return JSON.stringify([]);
+    }
+    const data = await r.json();
+    const collections = data?.result?.collections || [];
+    const targetCollection = collections.find(c => c.slug === slug);
+
+    if (!targetCollection || !targetCollection.movies || !Array.isArray(targetCollection.movies)) {
+      console.warn('[KENG][RoPhim10] ' + label + ' collection not found or empty');
+      return JSON.stringify([]);
+    }
+
+    // Simulate pagination by slicing the movies array
+    // Note: homepageLists returns limited items (10-12), so page 2+ will be empty
+    const pageSize = 12;
+    const p = page || 1;
+    const startIdx = (p - 1) * pageSize;
+    const endIdx = startIdx + pageSize;
+    const pageMovies = targetCollection.movies.slice(startIdx, endIdx);
+
+    const movies = pageMovies.map(transformCtaMovie).filter(m => m.title && m.url);
+    console.log('[KENG][RoPhim10] ' + label + ' page ' + p + ': ' + movies.length + ' movies');
+    return JSON.stringify(movies);
+  } catch (e) {
+    console.error('[KENG][RoPhim10] ' + label + ' error: ' + e.message);
+    return JSON.stringify([]);
+  }
+}
+
+async function getAllCinemaFeatured(page) {
+  return _fetchCtaFromList('man-nhan-voi-phim-chieu-rap', page, 'getAllCinemaFeatured');
+}
+
+async function getAllPhimHot(page) {
+  return _fetchCtaFromList('phim-sap-toi', page, 'getAllPhimHot');
+}
+
+async function getAllAnime(page) {
+  return _fetchCtaFromList('kho-tang-anime-moi-nhat', page, 'getAllAnime');
+}
+
+async function getAllHongKong(page) {
+  return _fetchCtaFromList('dien-anh-hong-kong-o-cho-nay-nay', page, 'getAllHongKong');
 }
