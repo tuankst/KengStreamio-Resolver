@@ -95,6 +95,7 @@ async function getMovieDetail(filmUrl) {
       title: apiMovie.name || '',
       title_original: apiMovie.origin_name || '',
       poster_url: apiMovie.poster || apiMovie.thumbnail || '',
+      thumbnail_url: apiMovie.thumbnail || '',  // Portrait for history/favorites
       url: apiMovie.slug ? `${SITE_BASE}/phim/${apiMovie.slug}` : filmUrl,
       year: String(apiMovie.publish_year || ''),
       duration: apiMovie.duration || '',

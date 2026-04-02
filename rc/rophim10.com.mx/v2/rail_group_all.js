@@ -32,6 +32,7 @@ async function railGroupAll() {
       title: apiMovie.name || '',
       title_original: apiMovie.origin_name || '',  // Fixed: was original_title
       poster_url: apiMovie.poster || apiMovie.thumbnail || '',  // Prefer poster (landscape) for home rails
+      thumbnail_url: apiMovie.thumbnail || '',  // Portrait for history/favorites
       url: apiMovie.slug ? `${SITE_BASE}/phim/${apiMovie.slug}` : '',
       media_type: apiMovie.type === 'series' ? 'series' : 'movie',  // Fixed: was movie_type
       badge_text: '',  // Added: required field
@@ -181,6 +182,7 @@ async function _fetchCtaMovies(url, label) {
       title: apiMovie.name || '',
       title_original: apiMovie.origin_name || '',
       poster_url: apiMovie.thumbnail || apiMovie.poster || '',  // Prefer thumbnail (portrait) for CTA
+      thumbnail_url: apiMovie.thumbnail || '',  // Portrait for history/favorites
       url: apiMovie.slug ? SITE_BASE + '/phim/' + apiMovie.slug : '',
       media_type: apiMovie.type === 'series' ? 'series' : 'movie',
       badge_text: '',

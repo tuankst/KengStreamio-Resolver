@@ -32,6 +32,7 @@ async function searchMovies(keyword, page = 1) {
       title: apiMovie.name || '',
       title_original: apiMovie.origin_name || '',
       poster_url: apiMovie.thumbnail || apiMovie.poster || '',  // Prefer thumbnail (portrait) for search grid
+      thumbnail_url: apiMovie.thumbnail || '',  // Portrait for history/favorites
       url: apiMovie.slug ? `${SITE_BASE}/phim/${apiMovie.slug}` : '',
       media_type: apiMovie.type === 'series' ? 'series' : 'movie',
       badge_text: '',
