@@ -55,7 +55,7 @@ async function railGroupAll() {
     // No longer relying on HTML parsing as app doesn't pass HTML
     try {
         console.log('[KENG][RoPhim10] Fetching rails from Homepage Lists API...');
-        const apiUrl = BASE_API + '/lists/homepageLists?page=1&limit=50';
+        const apiUrl = BASE_API + '/lists/homepageLists?page=1&limit=10';
         const apiResponse = await fetch(apiUrl, {
           headers: { 'User-Agent': UA }
         });
@@ -70,12 +70,12 @@ async function railGroupAll() {
               'phim-sap-toi': { id: 'phim_hot', is_hero_source: true, limit: 20 },
               'phim-dien-anh-moi-coong': { id: 'cinema', limit: 16 },
               'top-10-phim-bo-hom-nay': { id: 'top10_series', show_rank: true, limit: 10 },
-              'top-10-movies': { id: 'top10_movies', show_rank: true, limit: 10 },
-              'new-series': { id: 'new_series', limit: 12 },
-              'new-movies': { id: 'new_movies', limit: 12 },
+              'man-nhan-voi-phim-chieu-rap': { id: 'cinema_featured', limit: 12 },
               'phim-han-quoc-moi': { id: 'korean', limit: 12 },
               'phim-trung-quoc-moi': { id: 'chinese', limit: 12 },
-              'au-my': { id: 'usuk', limit: 12 }
+              'au-my': { id: 'usuk', limit: 12 },
+              'kho-tang-anime-moi-nhat': { id: 'anime', limit: 12 },
+              'dien-anh-hong-kong-o-cho-nay-nay': { id: 'hongkong', limit: 12 }
             };
             
             // CTA config: rails that have show_cta enabled
